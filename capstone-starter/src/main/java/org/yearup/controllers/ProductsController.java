@@ -9,6 +9,7 @@ import org.yearup.models.Product;
 import org.yearup.data.ProductDao;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -23,43 +24,50 @@ public class ProductsController
     {
         this.productDao = productDao;
     }
-
     @GetMapping("")
     @PreAuthorize("permitAll()")
     public List<Product> search(@RequestParam(name="cat", required = false) Integer categoryId,
                                 @RequestParam(name="minPrice", required = false) BigDecimal minPrice,
                                 @RequestParam(name="maxPrice", required = false) BigDecimal maxPrice,
-                                @RequestParam(name="color", required = false) String color
-    )
-    {
-        try
-        {
+                                @RequestParam(name="color", required = false) String color) {
+        try {
+            if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "minPrice should be less than or equal to maxPrice");
+            }
+
+            if (categoryId != null) {
+                return productDao.listByCategoryId(categoryId);
+            }
+
+            if (minPrice == null && maxPrice == null && color == null) {
+                return Collections.emptyList();
+            }
+
             return productDao.search(categoryId, minPrice, maxPrice, color);
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
     }
+
+
+
 
     @GetMapping("{id}")
     @PreAuthorize("permitAll()")
-    public Product getById(@PathVariable int id )
-    {
-        try
-        {
+    public Product getById(@PathVariable int id) {
+        try {
             var product = productDao.getById(id);
 
-            if(product == null)
+            if (product == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
 
             return product;
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
     }
+
 
         @PostMapping()
         @PreAuthorize("hasRole('ROLE_ADMIN')")
