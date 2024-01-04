@@ -77,17 +77,31 @@ public class ProductsController
 
     @PutMapping("{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public void updateProduct(@PathVariable int id, @RequestBody Product product)
-    {
-        try
-        {
-            productDao.create(product);
-        }
-        catch(Exception ex)
-        {
+    public void updateProduct(@PathVariable int id, @RequestBody Product product) {
+        try {
+            Product existingProduct = productDao.getById(id);
+
+            if (existingProduct == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
+            }
+
+            existingProduct.setName(product.getName());
+            existingProduct.setPrice(product.getPrice());
+            existingProduct.setColor(product.getColor());
+            existingProduct.setDescription(product.getDescription());
+            existingProduct.setCategoryId(product.getCategoryId());
+            existingProduct.setStock(product.getStock());
+            existingProduct.setFeatured(product.isFeatured());
+            existingProduct.setImageUrl(product.getImageUrl());
+
+
+
+            productDao.update(1, existingProduct);
+        } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
     }
+
 
     @DeleteMapping("{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
