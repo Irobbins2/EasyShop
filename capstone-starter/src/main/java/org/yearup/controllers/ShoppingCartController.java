@@ -73,7 +73,7 @@ public class ShoppingCartController
                     cart = new ShoppingCart();
                 }
                 cart.add(item);
-                shoppingCartDao.saveOrUpdate(cart);
+                shoppingCartDao.addToCart(userId, productId);
             } else {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found.");
             }
@@ -98,7 +98,7 @@ public class ShoppingCartController
                 ShoppingCart cart = shoppingCartDao.getByUserId(userId);
                 if (cart != null && cart.contains(productId)) {
                     cart.add(item);
-                    shoppingCartDao.saveOrUpdate(cart);
+                    shoppingCartDao.addToCart(userId, productId );
                 } else {
                     throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found in cart.");
                 }
@@ -113,19 +113,20 @@ public class ShoppingCartController
 
 // add a DELETE method to clear all products from the current users cart
     // https://localhost:8080/cart
-@DeleteMapping
-public void clearCart(Principal principal) {
+@DeleteMapping()
+@PreAuthorize("hasRole('ROLE_USER')")
+public ShoppingCart clearCart(Principal principal){
     try {
         String userName = principal.getName();
         User user = userDao.getByUserName(userName);
         int userId = user.getId();
-        ShoppingCart cart = shoppingCartDao.getByUserId(userId);
-        if (cart != null) {
-            cart.getItems().clear();
-            shoppingCartDao.saveOrUpdate(cart);
-        }
-    } catch (Exception e) {
-        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
+
+        shoppingCartDao.clearCart(userId);
+        return shoppingCartDao.getByUserId(userId);
+
+    }
+    catch (Exception exception){
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"delete error");
     }
 }
 }
