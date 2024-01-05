@@ -1,4 +1,5 @@
 package org.yearup.controllers;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -6,41 +7,37 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.yearup.models.Product;
 import org.yearup.data.ProductDao;
+
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
+
 @RestController
-@RequestMapping("products")
+@RequestMapping("/products")
 @CrossOrigin
-public class ProductsController
-{
-    private ProductDao productDao;
+public class ProductsController {
+
+    private final ProductDao productDao;
+
     @Autowired
-    public ProductsController(ProductDao productDao)
-    {
+    public ProductsController(ProductDao productDao) {
         this.productDao = productDao;
     }
-    @GetMapping("")
+
+    @GetMapping
     @PreAuthorize("permitAll()")
-    public List<Product> search(@RequestParam(name="cat", required = false) Integer categoryId,
-                                @RequestParam(name="minPrice", required = false) BigDecimal minPrice,
-                                @RequestParam(name="maxPrice", required = false) BigDecimal maxPrice,
-                                @RequestParam(name="color", required = false) String color) {
+    public List<Product> search(
+            @RequestParam(name = "cat", required = false) Integer categoryId,
+            @RequestParam(name = "minPrice", required = false) BigDecimal minPrice,
+            @RequestParam(name = "maxPrice", required = false) BigDecimal maxPrice,
+            @RequestParam(name = "color", required = false) String color
+    ) {
         try {
-            if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "minPrice should be less than or equal to maxPrice");
-            }
-            if (categoryId != null) {
-                return productDao.listByCategoryId(categoryId);
-            }
-            if (minPrice == null && maxPrice == null && color == null) {
-                return Collections.emptyList();
-            }
             return productDao.search(categoryId, minPrice, maxPrice, color);
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
     }
+
     @GetMapping("{id}")
     @PreAuthorize("permitAll()")
     public Product getById(@PathVariable int id) {
@@ -55,17 +52,12 @@ public class ProductsController
         }
     }
 
-
-    @PostMapping()
+    @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public Product addProduct(@RequestBody Product product)
-    {
-        try
-        {
+    public Product addProduct(@RequestBody Product product) {
+        try {
             return productDao.create(product);
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
     }
@@ -74,45 +66,22 @@ public class ProductsController
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public void updateProduct(@PathVariable int id, @RequestBody Product product) {
         try {
-            Product existingProduct = productDao.getById(id);
-
-            if (existingProduct == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
-            }
-
-            existingProduct.setName(product.getName());
-            existingProduct.setPrice(product.getPrice());
-            existingProduct.setColor(product.getColor());
-            existingProduct.setDescription(product.getDescription());
-            existingProduct.setCategoryId(product.getCategoryId());
-            existingProduct.setStock(product.getStock());
-            existingProduct.setFeatured(product.isFeatured());
-            existingProduct.setImageUrl(product.getImageUrl());
-
-
-
-            productDao.update(1, existingProduct);
+            productDao.update(id, product);
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
     }
 
-
     @DeleteMapping("{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public void deleteProduct(@PathVariable int id)
-    {
-        try
-        {
+    public void deleteProduct(@PathVariable int id) {
+        try {
             var product = productDao.getById(id);
-
-            if(product == null)
+            if (product == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-
+            }
             productDao.delete(id);
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
     }
